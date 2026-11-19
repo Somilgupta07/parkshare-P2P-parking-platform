@@ -1,0 +1,47 @@
+name: CI
+on:
+  push: { branches: [main, dev] }
+  pull_request: { branches: [main, dev] }
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_USER: parkshare, POSTGRES_PASSWORD: parkshare, POSTGRES_DB: parkshare }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U parkshare" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://parkshare:parkshare@localhost:5432/parkshare
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci_secret_ci_secret_ci_secret_ci_secret
+      OTP_SECRET: ci_otp_secret_123456
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+        working-directory: server
+      - run: npm run migrate
+        working-directory: server
+      - run: npm run seed
+        working-directory: server
+      - run: npm test
+        working-directory: server
+
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+        working-directory: client
+      - run: npm run build
+        working-directory: client

@@ -1,0 +1,16 @@
+{
+  "name": "parkshare",
+  "private": true,
+  "version": "1.0.0",
+  "description": "P2P parking marketplace - monorepo (server + client)",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "migrate": "npm --prefix server run migrate",
+    "seed": "npm --prefix server run seed",
+    "test": "npm --prefix server test",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  }
+}

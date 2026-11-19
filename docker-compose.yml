@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: parkshare
+      POSTGRES_PASSWORD: parkshare
+      POSTGRES_DB: parkshare
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parkshare -d parkshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build: ./server
+    env_file: ./server/.env
+    environment:
+      DATABASE_URL: postgres://parkshare:parkshare@db:5432/parkshare
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ["4000:4000"]
+    volumes: ["./server:/app", "/app/node_modules"]
+    command: sh -c "npm run migrate && npm run seed && npm run dev"
+
+  client:
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      VITE_API_PROXY: http://server:4000
+    ports: ["5173:5173"]
+    volumes: ["./client:/app", "/app/node_modules"]
+    command: sh -c "npm install && npm run dev"
+    depends_on: [server]
+
+volumes:
+  pgdata:
